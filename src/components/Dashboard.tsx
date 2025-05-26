@@ -1,9 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Mic, Camera, Plus, BarChart3, Shield, FileText, Users } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Mic, Camera, Plus, BarChart3, Shield, FileText, Users, Bell, Settings, User, LogOut } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 import VoiceInput from './VoiceInput';
 import PhotoCapture from './PhotoCapture';
 import TransactionForm from './TransactionForm';
@@ -23,11 +27,15 @@ interface Transaction {
 }
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
-  const [showAssistant, setShowAssistant] = useState(true);
+  const [showAssistant, setShowAssistant] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showInvoices, setShowInvoices] = useState(false);
 
   // Calculate totals
   const totalIncome = transactions
@@ -59,169 +67,201 @@ const Dashboard = () => {
 
   const recentTransactions = transactions.slice(0, 5);
 
-  const [showReports, setShowReports] = useState(false);
-  const [showSecurity, setShowSecurity] = useState(false);
-  const [showInvoices, setShowInvoices] = useState(false);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-orange-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 gradient-kenya rounded-xl flex items-center justify-center animate-bounce-in">
-                <ShoppingCart className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Modern Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo and Navigation */}
+            <div className="flex items-center space-x-8">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 gradient-kenya rounded-lg flex items-center justify-center">
+                  <ShoppingCart className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900">{t('dashboard.title')}</h1>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Biz Link</h1>
-                <p className="text-sm text-gray-600">Biashara Smart Tracker</p>
-              </div>
+              
+              {/* Navigation Links */}
+              <nav className="hidden md:flex space-x-6">
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                  {t('nav.dashboard')}
+                </Button>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                  {t('nav.reports')}
+                </Button>
+                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
+                  {t('nav.invoices')}
+                </Button>
+              </nav>
             </div>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={() => setShowSecurity(true)}
-                variant="outline"
-                size="sm"
-                className="hidden md:flex items-center space-x-2"
-              >
-                <Shield className="w-4 h-4" />
-                <span>Usalama</span>
+
+            {/* Right Side Actions */}
+            <div className="flex items-center space-x-4">
+              <LanguageSwitcher />
+              <Button variant="ghost" size="sm">
+                <Bell className="w-4 h-4" />
               </Button>
               <Button 
                 onClick={() => setShowAssistant(true)}
-                className="bg-kenya-green hover:bg-kenya-green/90 text-white animate-pulse-glow"
+                className="bg-kenya-green hover:bg-kenya-green/90 text-white"
+                size="sm"
               >
-                Msaada (Help)
+                {t('nav.help')}
               </Button>
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm">
+                  <User className="w-4 h-4" />
+                </Button>
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="animate-slide-up border-green-200 bg-gradient-to-br from-green-50 to-green-100">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-green-800">Mapato (Income)</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-900">{formatKES(totalIncome)}</div>
-              <p className="text-xs text-green-700 mt-1">
-                Pesa inayoingia biashara
-              </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Good morning, Business Owner! 👋</h2>
+          <p className="text-gray-600">Here's what's happening with your business today</p>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.income')}</p>
+                  <p className="text-2xl font-bold text-green-600">{formatKES(totalIncome)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Money coming in</p>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="animate-slide-up border-red-200 bg-gradient-to-br from-red-50 to-red-100" style={{ animationDelay: '0.1s' }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-red-800">Matumizi (Expenses)</CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-900">{formatKES(totalExpenses)}</div>
-              <p className="text-xs text-red-700 mt-1">
-                Pesa inayotoka biashara
-              </p>
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.expenses')}</p>
+                  <p className="text-2xl font-bold text-red-600">{formatKES(totalExpenses)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Money going out</p>
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <TrendingDown className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className={`animate-slide-up border-blue-200 ${profit >= 0 ? 'gradient-profit' : 'gradient-loss'}`} style={{ animationDelay: '0.2s' }}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-white">Faida (Profit)</CardTitle>
-              <DollarSign className="h-4 w-4 text-white" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{formatKES(profit)}</div>
-              <p className="text-xs text-white/90 mt-1">
-                {profit >= 0 ? 'Una faida!' : 'Una hasara'}
-              </p>
+          <Card className="bg-white shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{t('dashboard.profit')}</p>
+                  <p className={`text-2xl font-bold ${profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                    {formatKES(profit)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {profit >= 0 ? t('dashboard.youHaveProfit') : t('dashboard.youHaveLoss')}
+                  </p>
+                </div>
+                <div className={`w-12 h-12 ${profit >= 0 ? 'bg-blue-100' : 'bg-red-100'} rounded-lg flex items-center justify-center`}>
+                  <DollarSign className={`w-6 h-6 ${profit >= 0 ? 'text-blue-600' : 'text-red-600'}`} />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Enhanced Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="animate-fade-in">
+        {/* Quick Actions & Business Tools */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Quick Add Transaction */}
+          <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Ongeza Shughuli (Add Transaction)</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('dashboard.addTransaction')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Button 
                   onClick={() => setShowVoiceInput(true)}
-                  className="bg-kenya-red hover:bg-kenya-red/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
+                  variant="outline"
+                  className="h-20 flex flex-col items-center space-y-2 hover:bg-red-50 hover:border-red-300"
                 >
-                  <Mic className="w-8 h-8" />
-                  <span>Sauti (Voice)</span>
-                  <span className="text-xs opacity-90">Ongea kwa Kiswahili au Kingereza</span>
+                  <Mic className="w-6 h-6 text-red-600" />
+                  <span className="text-sm font-medium">{t('dashboard.voice')}</span>
                 </Button>
 
                 <Button 
                   onClick={() => setShowPhotoCapture(true)}
-                  className="bg-kenya-green hover:bg-kenya-green/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
-                  style={{ animationDelay: '0.5s' }}
+                  variant="outline"
+                  className="h-20 flex flex-col items-center space-y-2 hover:bg-green-50 hover:border-green-300"
                 >
-                  <Camera className="w-8 h-8" />
-                  <span>Picha (Photo)</span>
-                  <span className="text-xs opacity-90">Piga picha ya risiti</span>
+                  <Camera className="w-6 h-6 text-green-600" />
+                  <span className="text-sm font-medium">{t('dashboard.photo')}</span>
                 </Button>
 
                 <Button 
                   onClick={() => setShowTransactionForm(true)}
-                  className="bg-kenya-blue hover:bg-kenya-blue/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
-                  style={{ animationDelay: '1s' }}
+                  variant="outline"
+                  className="h-20 flex flex-col items-center space-y-2 hover:bg-blue-50 hover:border-blue-300"
                 >
-                  <Plus className="w-8 h-8" />
-                  <span>Kawaida (Manual)</span>
-                  <span className="text-xs opacity-90">Andika kwa mkono</span>
+                  <Plus className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm font-medium">{t('dashboard.manual')}</span>
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Business Management Tools */}
-          <Card className="animate-fade-in">
+          {/* Business Tools */}
+          <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">Zana za Biashara (Business Tools)</CardTitle>
+              <CardTitle className="text-lg font-semibold">{t('dashboard.businessTools')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
                 <Button 
                   onClick={() => setShowReports(true)}
                   variant="outline"
-                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-blue-50 hover:border-blue-300"
+                  className="h-16 flex flex-col items-center space-y-2 hover:bg-blue-50"
                 >
-                  <BarChart3 className="w-6 h-6 text-blue-600" />
-                  <span className="text-sm">Ripoti</span>
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm">{t('nav.reports')}</span>
                 </Button>
 
                 <Button 
                   onClick={() => setShowInvoices(true)}
                   variant="outline"
-                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-green-50 hover:border-green-300"
+                  className="h-16 flex flex-col items-center space-y-2 hover:bg-green-50"
                 >
-                  <FileText className="w-6 h-6 text-green-600" />
-                  <span className="text-sm">Bili</span>
+                  <FileText className="w-5 h-5 text-green-600" />
+                  <span className="text-sm">{t('nav.invoices')}</span>
                 </Button>
 
                 <Button 
                   variant="outline"
-                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-purple-50 hover:border-purple-300"
+                  className="h-16 flex flex-col items-center space-y-2 hover:bg-purple-50"
                 >
-                  <Users className="w-6 h-6 text-purple-600" />
-                  <span className="text-sm">Wateja</span>
+                  <Users className="w-5 h-5 text-purple-600" />
+                  <span className="text-sm">Customers</span>
                 </Button>
 
                 <Button 
                   onClick={() => setShowSecurity(true)}
                   variant="outline"
-                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-red-50 hover:border-red-300"
+                  className="h-16 flex flex-col items-center space-y-2 hover:bg-red-50"
                 >
-                  <Shield className="w-6 h-6 text-red-600" />
-                  <span className="text-sm">Usalama</span>
+                  <Shield className="w-5 h-5 text-red-600" />
+                  <span className="text-sm">{t('nav.security')}</span>
                 </Button>
               </div>
             </CardContent>
@@ -229,19 +269,18 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Transactions */}
-        <Card className="animate-fade-in">
+        <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold text-gray-900">Shughuli za Hivi Karibuni</CardTitle>
-            <BarChart3 className="w-5 h-5 text-gray-600" />
+            <CardTitle className="text-lg font-semibold">{t('dashboard.recentTransactions')}</CardTitle>
+            <Button variant="outline" size="sm">View All</Button>
           </CardHeader>
           <CardContent>
             {recentTransactions.length > 0 ? (
-              <div className="space-y-4">
-                {recentTransactions.map((transaction, index) => (
+              <div className="space-y-3">
+                {recentTransactions.map((transaction) => (
                   <div 
                     key={transaction.id} 
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg animate-slide-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -265,13 +304,13 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-bold ${
+                      <p className={`font-semibold ${
                         transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
                         {transaction.type === 'income' ? '+' : '-'}{formatKES(transaction.amount)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {transaction.timestamp.toLocaleTimeString('sw-KE', { 
+                        {transaction.timestamp.toLocaleTimeString('en-US', { 
                           hour: '2-digit', 
                           minute: '2-digit' 
                         })}
@@ -281,10 +320,19 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Hakuna shughuli bado</p>
-                <p className="text-sm text-gray-500">Anza kuongeza mapato na matumizi yako</p>
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noTransactions')}</h3>
+                <p className="text-gray-600 mb-4">{t('dashboard.startAdding')}</p>
+                <Button 
+                  onClick={() => setShowTransactionForm(true)}
+                  className="bg-kenya-blue hover:bg-kenya-blue/90"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add First Transaction
+                </Button>
               </div>
             )}
           </CardContent>
