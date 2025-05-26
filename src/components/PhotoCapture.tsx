@@ -98,8 +98,9 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({ onClose, onTransactionAdd }
     // Simulate OCR processing (in real app, you'd use OCR service)
     setTimeout(() => {
       // Mock extracted data from receipt
+      const mockAmount = Math.floor(Math.random() * 1000) + 50;
       const mockData = {
-        amount: Math.floor(Math.random() * 1000) + 50,
+        amount: mockAmount.toString(), // Convert to string to match state type
         description: 'Bidhaa za duka',
         type: 'expense' as const,
         category: 'Biashara'
