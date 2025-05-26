@@ -1,14 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Mic, Camera, Plus, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Mic, Camera, Plus, BarChart3, Shield, FileText, Users } from 'lucide-react';
 import VoiceInput from './VoiceInput';
 import PhotoCapture from './PhotoCapture';
 import TransactionForm from './TransactionForm';
 import Assistant from './Assistant';
+import Reports from './Reports';
+import SecuritySettings from './SecuritySettings';
+import InvoiceManager from './InvoiceManager';
 
 interface Transaction {
   id: string;
@@ -57,6 +59,10 @@ const Dashboard = () => {
 
   const recentTransactions = transactions.slice(0, 5);
 
+  const [showReports, setShowReports] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showInvoices, setShowInvoices] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50">
       {/* Header */}
@@ -72,12 +78,23 @@ const Dashboard = () => {
                 <p className="text-sm text-gray-600">Biashara Smart Tracker</p>
               </div>
             </div>
-            <Button 
-              onClick={() => setShowAssistant(true)}
-              className="bg-kenya-green hover:bg-kenya-green/90 text-white animate-pulse-glow"
-            >
-              Msaada (Help)
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={() => setShowSecurity(true)}
+                variant="outline"
+                size="sm"
+                className="hidden md:flex items-center space-x-2"
+              >
+                <Shield className="w-4 h-4" />
+                <span>Usalama</span>
+              </Button>
+              <Button 
+                onClick={() => setShowAssistant(true)}
+                className="bg-kenya-green hover:bg-kenya-green/90 text-white animate-pulse-glow"
+              >
+                Msaada (Help)
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -125,44 +142,91 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">Ongeza Shughuli (Add Transaction)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button 
-                onClick={() => setShowVoiceInput(true)}
-                className="bg-kenya-red hover:bg-kenya-red/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
-              >
-                <Mic className="w-8 h-8" />
-                <span>Sauti (Voice)</span>
-                <span className="text-xs opacity-90">Ongea kwa Kiswahili au Kingereza</span>
-              </Button>
+        {/* Enhanced Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Ongeza Shughuli (Add Transaction)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button 
+                  onClick={() => setShowVoiceInput(true)}
+                  className="bg-kenya-red hover:bg-kenya-red/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
+                >
+                  <Mic className="w-8 h-8" />
+                  <span>Sauti (Voice)</span>
+                  <span className="text-xs opacity-90">Ongea kwa Kiswahili au Kingereza</span>
+                </Button>
 
-              <Button 
-                onClick={() => setShowPhotoCapture(true)}
-                className="bg-kenya-green hover:bg-kenya-green/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
-                style={{ animationDelay: '0.5s' }}
-              >
-                <Camera className="w-8 h-8" />
-                <span>Picha (Photo)</span>
-                <span className="text-xs opacity-90">Piga picha ya risiti</span>
-              </Button>
+                <Button 
+                  onClick={() => setShowPhotoCapture(true)}
+                  className="bg-kenya-green hover:bg-kenya-green/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
+                  style={{ animationDelay: '0.5s' }}
+                >
+                  <Camera className="w-8 h-8" />
+                  <span>Picha (Photo)</span>
+                  <span className="text-xs opacity-90">Piga picha ya risiti</span>
+                </Button>
 
-              <Button 
-                onClick={() => setShowTransactionForm(true)}
-                className="bg-kenya-blue hover:bg-kenya-blue/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
-                style={{ animationDelay: '1s' }}
-              >
-                <Plus className="w-8 h-8" />
-                <span>Kawaida (Manual)</span>
-                <span className="text-xs opacity-90">Andika kwa mkono</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <Button 
+                  onClick={() => setShowTransactionForm(true)}
+                  className="bg-kenya-blue hover:bg-kenya-blue/90 text-white p-6 h-auto flex flex-col items-center space-y-2 animate-float"
+                  style={{ animationDelay: '1s' }}
+                >
+                  <Plus className="w-8 h-8" />
+                  <span>Kawaida (Manual)</span>
+                  <span className="text-xs opacity-90">Andika kwa mkono</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Business Management Tools */}
+          <Card className="animate-fade-in">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Zana za Biashara (Business Tools)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <Button 
+                  onClick={() => setShowReports(true)}
+                  variant="outline"
+                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <BarChart3 className="w-6 h-6 text-blue-600" />
+                  <span className="text-sm">Ripoti</span>
+                </Button>
+
+                <Button 
+                  onClick={() => setShowInvoices(true)}
+                  variant="outline"
+                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-green-50 hover:border-green-300"
+                >
+                  <FileText className="w-6 h-6 text-green-600" />
+                  <span className="text-sm">Bili</span>
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-purple-50 hover:border-purple-300"
+                >
+                  <Users className="w-6 h-6 text-purple-600" />
+                  <span className="text-sm">Wateja</span>
+                </Button>
+
+                <Button 
+                  onClick={() => setShowSecurity(true)}
+                  variant="outline"
+                  className="p-4 h-auto flex flex-col items-center space-y-2 hover:bg-red-50 hover:border-red-300"
+                >
+                  <Shield className="w-6 h-6 text-red-600" />
+                  <span className="text-sm">Usalama</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent Transactions */}
         <Card className="animate-fade-in">
@@ -253,6 +317,25 @@ const Dashboard = () => {
         <Assistant 
           onClose={() => setShowAssistant(false)}
           transactions={transactions}
+        />
+      )}
+
+      {showReports && (
+        <Reports 
+          onClose={() => setShowReports(false)}
+          transactions={transactions}
+        />
+      )}
+
+      {showSecurity && (
+        <SecuritySettings 
+          onClose={() => setShowSecurity(false)}
+        />
+      )}
+
+      {showInvoices && (
+        <InvoiceManager 
+          onClose={() => setShowInvoices(false)}
         />
       )}
     </div>
