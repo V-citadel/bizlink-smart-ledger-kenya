@@ -3,7 +3,6 @@
 
 A modern business management web application designed specifically for Kenyan entrepreneurs and small businesses. Track income, expenses, manage invoices, and get insights into your business performance with multilingual support (English/Kiswahili).
 
-![Biz Link Dashboard](public/placeholder.svg)
 
 ## 🌟 Features
 
