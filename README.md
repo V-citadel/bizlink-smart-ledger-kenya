@@ -249,12 +249,6 @@ We welcome contributions! Please follow these steps:
 - Check Tailwind CSS classes
 - Verify viewport meta tag
 
-## 📚 Additional Resources
-
-- [React Documentation](https://reactjs.org/)
-- [Tailwind CSS Docs](https://tailwindcss.com/)
-- [shadcn/ui Components](https://ui.shadcn.com/)
-- [Lovable Platform Docs](https://docs.lovable.dev/)
 
 ## 📄 License
 
