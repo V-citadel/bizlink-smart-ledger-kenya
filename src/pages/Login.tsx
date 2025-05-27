@@ -1,14 +1,19 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShoppingCart, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -27,11 +32,50 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Handle login logic here
-      console.log('Login data:', formData);
+    if (!validateForm()) return;
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Login failed",
+            description: "Invalid email or password. Please check your credentials and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Login failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in to Biz Link.",
+        });
+        navigate('/');
+      }
+    } catch (error) {
+      toast({
+        title: "An error occurred",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,6 +109,7 @@ const Login = () => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className={errors.email ? 'border-red-500' : ''}
                   placeholder="your.email@example.com"
+                  disabled={loading}
                 />
                 {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
               </div>
@@ -79,11 +124,13 @@ const Login = () => {
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     className={errors.password ? 'border-red-500' : ''}
                     placeholder="Enter your password"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -101,9 +148,13 @@ const Login = () => {
                 </Link>
               </div>
 
-              <Button type="submit" className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white">
-                Sign In
-                <ArrowRight className="w-4 h-4 ml-2" />
+              <Button 
+                type="submit" 
+                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white"
+                disabled={loading}
+              >
+                {loading ? 'Signing In...' : 'Sign In'}
+                {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
               </Button>
 
               <div className="text-center">

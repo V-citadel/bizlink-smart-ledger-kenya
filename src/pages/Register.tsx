@@ -1,16 +1,20 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { ShoppingCart, Eye, EyeOff, CheckCircle, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Register = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -58,11 +62,59 @@ const Register = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      // Handle registration logic here
-      console.log('Registration data:', formData);
+    if (!validateForm()) return;
+
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+            businessName: formData.businessName,
+            businessType: formData.businessType,
+          }
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "Account already exists",
+            description: "This email is already registered. Please try logging in instead.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Registration successful!",
+          description: "Welcome to Biz Link! You can now start tracking your business.",
+        });
+        navigate('/');
+      }
+    } catch (error) {
+      toast({
+        title: "An error occurred",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,6 +184,7 @@ const Register = () => {
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     className={errors.firstName ? 'border-red-500' : ''}
                     placeholder="Enter your first name"
+                    disabled={loading}
                   />
                   {errors.firstName && <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>}
                 </div>
@@ -144,6 +197,7 @@ const Register = () => {
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     className={errors.lastName ? 'border-red-500' : ''}
                     placeholder="Enter your last name"
+                    disabled={loading}
                   />
                   {errors.lastName && <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>}
                 </div>
@@ -159,6 +213,7 @@ const Register = () => {
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   className={errors.email ? 'border-red-500' : ''}
                   placeholder="your.email@example.com"
+                  disabled={loading}
                 />
                 {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
               </div>
@@ -171,6 +226,7 @@ const Register = () => {
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   className={errors.phone ? 'border-red-500' : ''}
                   placeholder="+254 700 000 000"
+                  disabled={loading}
                 />
                 {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone}</p>}
               </div>
@@ -184,6 +240,7 @@ const Register = () => {
                   onChange={(e) => handleInputChange('businessName', e.target.value)}
                   className={errors.businessName ? 'border-red-500' : ''}
                   placeholder="Enter your business name"
+                  disabled={loading}
                 />
                 {errors.businessName && <p className="text-sm text-red-600 mt-1">{errors.businessName}</p>}
               </div>
@@ -195,6 +252,7 @@ const Register = () => {
                   value={formData.businessType}
                   onChange={(e) => handleInputChange('businessType', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md text-sm ${errors.businessType ? 'border-red-500' : 'border-gray-300'}`}
+                  disabled={loading}
                 >
                   <option value="">Select your business type</option>
                   {businessTypes.map(type => (
@@ -215,11 +273,13 @@ const Register = () => {
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     className={errors.password ? 'border-red-500' : ''}
                     placeholder="Create a strong password"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    disabled={loading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -237,11 +297,13 @@ const Register = () => {
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     className={errors.confirmPassword ? 'border-red-500' : ''}
                     placeholder="Confirm your password"
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                    disabled={loading}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -249,9 +311,13 @@ const Register = () => {
                 {errors.confirmPassword && <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>}
               </div>
 
-              <Button type="submit" className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white">
-                Create Account
-                <ArrowRight className="w-4 h-4 ml-2" />
+              <Button 
+                type="submit" 
+                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white"
+                disabled={loading}
+              >
+                {loading ? 'Creating Account...' : 'Create Account'}
+                {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
               </Button>
 
               <div className="text-center">
