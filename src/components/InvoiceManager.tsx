@@ -4,53 +4,57 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Plus, Send, Download, Eye } from 'lucide-react';
-
-interface Invoice {
-  id: string;
-  clientName: string;
-  clientEmail: string;
-  amount: number;
-  description: string;
-  status: 'draft' | 'sent' | 'paid' | 'overdue';
-  dueDate: Date;
-  createdDate: Date;
-}
+import { FileText, X, Plus, Download, Eye, Edit } from 'lucide-react';
 
 interface InvoiceManagerProps {
   onClose: () => void;
 }
 
+interface Invoice {
+  id: string;
+  number: string;
+  client: string;
+  amount: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue';
+  date: Date;
+  dueDate: Date;
+}
+
 const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onClose }) => {
   const [invoices, setInvoices] = useState<Invoice[]>([
     {
-      id: '001',
-      clientName: 'John Mwangi',
-      clientEmail: 'john@example.com',
-      amount: 25000,
-      description: 'Huduma za uongozaji',
-      status: 'sent',
-      dueDate: new Date('2024-06-15'),
-      createdDate: new Date('2024-05-20')
+      id: '1',
+      number: 'INV-001',
+      client: 'John Doe Enterprises',
+      amount: 50000,
+      status: 'paid',
+      date: new Date('2024-12-01'),
+      dueDate: new Date('2024-12-15')
     },
     {
-      id: '002',
-      clientName: 'Grace Wanjiku',
-      clientEmail: 'grace@example.com',
-      amount: 15000,
-      description: 'Mafunzo ya kompyuta',
-      status: 'paid',
-      dueDate: new Date('2024-06-10'),
-      createdDate: new Date('2024-05-15')
+      id: '2',
+      number: 'INV-002',
+      client: 'ABC Corp',
+      amount: 75000,
+      status: 'sent',
+      date: new Date('2024-12-10'),
+      dueDate: new Date('2024-12-25')
+    },
+    {
+      id: '3',
+      number: 'INV-003',
+      client: 'XYZ Limited',
+      amount: 25000,
+      status: 'overdue',
+      date: new Date('2024-11-20'),
+      dueDate: new Date('2024-12-05')
     }
   ]);
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [newInvoice, setNewInvoice] = useState({
-    clientName: '',
-    clientEmail: '',
+    client: '',
     amount: '',
     description: '',
     dueDate: ''
@@ -64,159 +68,164 @@ const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onClose }) => {
     }).format(amount);
   };
 
-  const getStatusBadge = (status: Invoice['status']) => {
-    const statusConfig = {
-      draft: { label: 'Rasimu', variant: 'secondary' as const },
-      sent: { label: 'Imetumwa', variant: 'default' as const },
-      paid: { label: 'Imelipwa', variant: 'outline' as const },
-      overdue: { label: 'Imechelewa', variant: 'destructive' as const }
-    };
-    
-    const config = statusConfig[status];
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'sent':
+        return 'bg-blue-100 text-blue-800';
+      case 'overdue':
+        return 'bg-red-100 text-red-800';
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const createInvoice = () => {
-    if (!newInvoice.clientName || !newInvoice.amount) return;
-
+  const handleCreateInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    
     const invoice: Invoice = {
-      id: String(invoices.length + 1).padStart(3, '0'),
-      clientName: newInvoice.clientName,
-      clientEmail: newInvoice.clientEmail,
+      id: Date.now().toString(),
+      number: `INV-${String(invoices.length + 1).padStart(3, '0')}`,
+      client: newInvoice.client,
       amount: parseFloat(newInvoice.amount),
-      description: newInvoice.description,
       status: 'draft',
-      dueDate: new Date(newInvoice.dueDate),
-      createdDate: new Date()
+      date: new Date(),
+      dueDate: new Date(newInvoice.dueDate)
     };
 
     setInvoices(prev => [invoice, ...prev]);
-    setNewInvoice({
-      clientName: '',
-      clientEmail: '',
-      amount: '',
-      description: '',
-      dueDate: ''
-    });
-    setShowCreateForm(false);
+    setNewInvoice({ client: '', amount: '', description: '', dueDate: '' });
+    setShowNewInvoice(false);
   };
 
-  const totalOutstanding = invoices
-    .filter(inv => inv.status === 'sent' || inv.status === 'overdue')
-    .reduce((sum, inv) => sum + inv.amount, 0);
-
-  const totalPaid = invoices
-    .filter(inv => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.amount, 0);
+  const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+  const paidAmount = invoices.filter(inv => inv.status === 'paid').reduce((sum, inv) => sum + inv.amount, 0);
+  const outstandingAmount = totalAmount - paidAmount;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-6xl bg-white animate-bounce-in max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-bold flex items-center space-x-2">
-            <FileText className="w-6 h-6 text-kenya-blue" />
-            <span>Usimamizi wa Bili (Invoice Management)</span>
+      <Card className="w-full max-w-6xl h-[600px] bg-white flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between border-b">
+          <CardTitle className="text-lg font-semibold flex items-center space-x-2">
+            <FileText className="w-5 h-5 text-green-600" />
+            <span>Invoice Manager</span>
           </CardTitle>
-          <div className="flex space-x-2">
-            <Button onClick={() => setShowCreateForm(true)} className="bg-kenya-green hover:bg-kenya-green/90">
+          <div className="flex items-center space-x-2">
+            <Button 
+              onClick={() => setShowNewInvoice(true)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+              size="sm"
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Tengeneza Bili
+              New Invoice
             </Button>
-            <Button variant="ghost" size="sm" onClick={onClose}>×</Button>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
           </div>
         </CardHeader>
-
-        <CardContent className="space-y-6">
+        
+        <CardContent className="flex-1 overflow-y-auto p-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-blue-700">Jumla ya Bili</p>
-                  <p className="text-2xl font-bold text-blue-900">{invoices.length}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-yellow-50 border-yellow-200">
-              <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-yellow-700">Zinasubiri Malipo</p>
-                  <p className="text-2xl font-bold text-yellow-900">{formatKES(totalOutstanding)}</p>
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Total Invoiced</p>
+                  <p className="text-2xl font-bold text-blue-700">{formatKES(totalAmount)}</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-green-50 border-green-200">
               <CardContent className="p-4">
-                <div className="text-center">
-                  <p className="text-sm text-green-700">Zimelipwa</p>
-                  <p className="text-2xl font-bold text-green-900">{formatKES(totalPaid)}</p>
+                <div>
+                  <p className="text-sm font-medium text-green-600">Amount Paid</p>
+                  <p className="text-2xl font-bold text-green-700">{formatKES(paidAmount)}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-orange-50 border-orange-200">
+              <CardContent className="p-4">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">Outstanding</p>
+                  <p className="text-2xl font-bold text-orange-700">{formatKES(outstandingAmount)}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Create Invoice Form */}
-          {showCreateForm && (
-            <Card className="border-2 border-kenya-green">
+          {/* New Invoice Form */}
+          {showNewInvoice && (
+            <Card className="mb-6 border-green-200">
               <CardHeader>
-                <CardTitle>Tengeneza Bili Mpya</CardTitle>
+                <CardTitle className="text-base">Create New Invoice</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Jina la Mteja</Label>
-                    <Input
-                      value={newInvoice.clientName}
-                      onChange={(e) => setNewInvoice(prev => ({ ...prev, clientName: e.target.value }))}
-                      placeholder="Mfano: John Doe"
-                    />
+              <CardContent>
+                <form onSubmit={handleCreateInvoice} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="client">Client Name</Label>
+                      <Input
+                        id="client"
+                        value={newInvoice.client}
+                        onChange={(e) => setNewInvoice(prev => ({ ...prev, client: e.target.value }))}
+                        placeholder="Enter client name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="amount">Amount (KES)</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        value={newInvoice.amount}
+                        onChange={(e) => setNewInvoice(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label>Barua pepe ya Mteja</Label>
-                    <Input
-                      type="email"
-                      value={newInvoice.clientEmail}
-                      onChange={(e) => setNewInvoice(prev => ({ ...prev, clientEmail: e.target.value }))}
-                      placeholder="john@example.com"
-                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="description">Description</Label>
+                      <Input
+                        id="description"
+                        value={newInvoice.description}
+                        onChange={(e) => setNewInvoice(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Services provided..."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dueDate">Due Date</Label>
+                      <Input
+                        id="dueDate"
+                        type="date"
+                        value={newInvoice.dueDate}
+                        onChange={(e) => setNewInvoice(prev => ({ ...prev, dueDate: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label>Kiasi (KES)</Label>
-                    <Input
-                      type="number"
-                      value={newInvoice.amount}
-                      onChange={(e) => setNewInvoice(prev => ({ ...prev, amount: e.target.value }))}
-                      placeholder="10000"
-                    />
+
+                  <div className="flex space-x-2">
+                    <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                      Create Invoice
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setShowNewInvoice(false)}
+                    >
+                      Cancel
+                    </Button>
                   </div>
-                  <div>
-                    <Label>Tarehe ya Kulipa</Label>
-                    <Input
-                      type="date"
-                      value={newInvoice.dueDate}
-                      onChange={(e) => setNewInvoice(prev => ({ ...prev, dueDate: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>Maelezo ya Huduma</Label>
-                  <Textarea
-                    value={newInvoice.description}
-                    onChange={(e) => setNewInvoice(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Eleza huduma ulizotoa..."
-                    rows={3}
-                  />
-                </div>
-                <div className="flex space-x-2">
-                  <Button onClick={createInvoice} className="bg-kenya-green hover:bg-kenya-green/90">
-                    Tengeneza Bili
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                    Ghairi
-                  </Button>
-                </div>
+                </form>
               </CardContent>
             </Card>
           )}
@@ -224,46 +233,67 @@ const InvoiceManager: React.FC<InvoiceManagerProps> = ({ onClose }) => {
           {/* Invoices List */}
           <Card>
             <CardHeader>
-              <CardTitle>Bili Zote</CardTitle>
+              <CardTitle className="text-base">All Invoices</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {invoices.map((invoice) => (
-                  <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
+              {invoices.length > 0 ? (
+                <div className="space-y-3">
+                  {invoices.map((invoice) => (
+                    <div 
+                      key={invoice.id}
+                      className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    >
                       <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-green-600" />
+                        </div>
                         <div>
-                          <p className="font-medium">#{invoice.id} - {invoice.clientName}</p>
-                          <p className="text-sm text-gray-600">{invoice.description}</p>
-                          <p className="text-xs text-gray-500">
-                            Ilitengenezwa: {invoice.createdDate.toLocaleDateString('sw-KE')} | 
-                            Kulipa: {invoice.dueDate.toLocaleDateString('sw-KE')}
+                          <p className="font-medium">{invoice.number}</p>
+                          <p className="text-sm text-gray-600">{invoice.client}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="font-semibold">{formatKES(invoice.amount)}</p>
+                          <p className="text-sm text-gray-600">
+                            Due: {invoice.dueDate.toLocaleDateString()}
                           </p>
+                        </div>
+
+                        <Badge className={`${getStatusColor(invoice.status)} border-0`}>
+                          {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                        </Badge>
+
+                        <div className="flex space-x-1">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Download className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatKES(invoice.amount)}</p>
-                        {getStatusBadge(invoice.status)}
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        {invoice.status === 'draft' && (
-                          <Button size="sm" className="bg-kenya-blue hover:bg-kenya-blue/90">
-                            <Send className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices yet</h3>
+                  <p className="text-gray-600 mb-4">Create your first invoice to get started</p>
+                  <Button 
+                    onClick={() => setShowNewInvoice(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Invoice
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </CardContent>

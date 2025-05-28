@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Mic, Camera, Plus, BarChart3, Shield, FileText, Users, Bell, Settings, User, LogOut } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import VoiceInput from './VoiceInput';
 import PhotoCapture from './PhotoCapture';
@@ -28,6 +28,7 @@ interface Transaction {
 
 const Dashboard = () => {
   const { t } = useLanguage();
+  const { user, signOut } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
@@ -67,6 +68,10 @@ const Dashboard = () => {
 
   const recentTransactions = transactions.slice(0, 5);
 
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Modern Header */}
@@ -76,22 +81,30 @@ const Dashboard = () => {
             {/* Logo and Navigation */}
             <div className="flex items-center space-x-8">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 gradient-kenya rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                   <ShoppingCart className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+                <h1 className="text-xl font-bold text-gray-900">BizKash</h1>
               </div>
               
               {/* Navigation Links */}
               <nav className="hidden md:flex space-x-6">
                 <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                  {t('nav.dashboard')}
+                  Dashboard
                 </Button>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                  {t('nav.reports')}
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-600 hover:text-gray-900"
+                  onClick={() => setShowReports(true)}
+                >
+                  Reports
                 </Button>
-                <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                  {t('nav.invoices')}
+                <Button 
+                  variant="ghost" 
+                  className="text-gray-600 hover:text-gray-900"
+                  onClick={() => setShowInvoices(true)}
+                >
+                  Invoices
                 </Button>
               </nav>
             </div>
@@ -104,20 +117,21 @@ const Dashboard = () => {
               </Button>
               <Button 
                 onClick={() => setShowAssistant(true)}
-                className="bg-kenya-green hover:bg-kenya-green/90 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
                 size="sm"
               >
-                {t('nav.help')}
+                Help
               </Button>
               <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600 hidden md:block">
+                  {user?.user_metadata?.firstName || 'User'}
+                </span>
                 <Button variant="ghost" size="sm">
                   <User className="w-4 h-4" />
                 </Button>
-                <Link to="/login">
-                  <Button variant="ghost" size="sm">
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -127,7 +141,9 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Good morning, Business Owner! 👋</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Good morning, {user?.user_metadata?.firstName || 'Business Owner'}! 👋
+          </h2>
           <p className="text-gray-600">Here's what's happening with your business today</p>
         </div>
 
@@ -137,7 +153,7 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('dashboard.income')}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Income</p>
                   <p className="text-2xl font-bold text-green-600">{formatKES(totalIncome)}</p>
                   <p className="text-xs text-gray-500 mt-1">Money coming in</p>
                 </div>
@@ -152,7 +168,7 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('dashboard.expenses')}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Expenses</p>
                   <p className="text-2xl font-bold text-red-600">{formatKES(totalExpenses)}</p>
                   <p className="text-xs text-gray-500 mt-1">Money going out</p>
                 </div>
@@ -167,12 +183,12 @@ const Dashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{t('dashboard.profit')}</p>
+                  <p className="text-sm font-medium text-gray-600">Net Profit</p>
                   <p className={`text-2xl font-bold ${profit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                     {formatKES(profit)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {profit >= 0 ? t('dashboard.youHaveProfit') : t('dashboard.youHaveLoss')}
+                    {profit >= 0 ? 'You have profit' : 'You have loss'}
                   </p>
                 </div>
                 <div className={`w-12 h-12 ${profit >= 0 ? 'bg-blue-100' : 'bg-red-100'} rounded-lg flex items-center justify-center`}>
@@ -188,7 +204,7 @@ const Dashboard = () => {
           {/* Quick Add Transaction */}
           <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{t('dashboard.addTransaction')}</CardTitle>
+              <CardTitle className="text-lg font-semibold">Add Transaction</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
@@ -198,7 +214,7 @@ const Dashboard = () => {
                   className="h-20 flex flex-col items-center space-y-2 hover:bg-red-50 hover:border-red-300"
                 >
                   <Mic className="w-6 h-6 text-red-600" />
-                  <span className="text-sm font-medium">{t('dashboard.voice')}</span>
+                  <span className="text-sm font-medium">Voice</span>
                 </Button>
 
                 <Button 
@@ -207,7 +223,7 @@ const Dashboard = () => {
                   className="h-20 flex flex-col items-center space-y-2 hover:bg-green-50 hover:border-green-300"
                 >
                   <Camera className="w-6 h-6 text-green-600" />
-                  <span className="text-sm font-medium">{t('dashboard.photo')}</span>
+                  <span className="text-sm font-medium">Photo</span>
                 </Button>
 
                 <Button 
@@ -216,7 +232,7 @@ const Dashboard = () => {
                   className="h-20 flex flex-col items-center space-y-2 hover:bg-blue-50 hover:border-blue-300"
                 >
                   <Plus className="w-6 h-6 text-blue-600" />
-                  <span className="text-sm font-medium">{t('dashboard.manual')}</span>
+                  <span className="text-sm font-medium">Manual</span>
                 </Button>
               </div>
             </CardContent>
@@ -225,7 +241,7 @@ const Dashboard = () => {
           {/* Business Tools */}
           <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold">{t('dashboard.businessTools')}</CardTitle>
+              <CardTitle className="text-lg font-semibold">Business Tools</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -235,7 +251,7 @@ const Dashboard = () => {
                   className="h-16 flex flex-col items-center space-y-2 hover:bg-blue-50"
                 >
                   <BarChart3 className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm">{t('nav.reports')}</span>
+                  <span className="text-sm">Reports</span>
                 </Button>
 
                 <Button 
@@ -244,7 +260,7 @@ const Dashboard = () => {
                   className="h-16 flex flex-col items-center space-y-2 hover:bg-green-50"
                 >
                   <FileText className="w-5 h-5 text-green-600" />
-                  <span className="text-sm">{t('nav.invoices')}</span>
+                  <span className="text-sm">Invoices</span>
                 </Button>
 
                 <Button 
@@ -261,7 +277,7 @@ const Dashboard = () => {
                   className="h-16 flex flex-col items-center space-y-2 hover:bg-red-50"
                 >
                   <Shield className="w-5 h-5 text-red-600" />
-                  <span className="text-sm">{t('nav.security')}</span>
+                  <span className="text-sm">Security</span>
                 </Button>
               </div>
             </CardContent>
@@ -271,7 +287,7 @@ const Dashboard = () => {
         {/* Recent Transactions */}
         <Card className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">{t('dashboard.recentTransactions')}</CardTitle>
+            <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
             <Button variant="outline" size="sm">View All</Button>
           </CardHeader>
           <CardContent>
@@ -324,11 +340,11 @@ const Dashboard = () => {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BarChart3 className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('dashboard.noTransactions')}</h3>
-                <p className="text-gray-600 mb-4">{t('dashboard.startAdding')}</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h3>
+                <p className="text-gray-600 mb-4">Start tracking your business income and expenses</p>
                 <Button 
                   onClick={() => setShowTransactionForm(true)}
-                  className="bg-kenya-blue hover:bg-kenya-blue/90"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add First Transaction

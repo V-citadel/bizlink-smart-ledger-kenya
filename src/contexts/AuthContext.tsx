@@ -58,14 +58,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         id: 'user-' + Date.now(),
         email: email,
         user_metadata: {
-          firstName: 'Business',
-          lastName: 'Owner',
+          firstName: 'John',
+          lastName: 'Doe',
           businessName: email.includes('@') ? email.split('@')[0] + ' Business' : 'My Business'
         }
       };
 
       localStorage.setItem('bizkash-user', JSON.stringify(demoUser));
       setUser(demoUser);
+      
+      // Force a page refresh to ensure proper state update
+      window.location.href = '/';
     } catch (error) {
       throw new Error('Authentication failed');
     } finally {
@@ -92,6 +95,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       localStorage.setItem('bizkash-user', JSON.stringify(newUser));
       setUser(newUser);
+      
+      // Force a page refresh to ensure proper state update
+      window.location.href = '/';
     } catch (error) {
       throw new Error('Registration failed');
     } finally {
@@ -102,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     localStorage.removeItem('bizkash-user');
     setUser(null);
+    window.location.href = '/login';
   };
 
   const value = {

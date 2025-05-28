@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Volume2, X, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Mic, MicOff, X, Loader2, Check } from 'lucide-react';
 
 interface VoiceInputProps {
   onClose: () => void;
@@ -20,153 +21,113 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onClose, onTransactionAdd }) =>
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [parsedTransaction, setParsedTransaction] = useState<any>(null);
-  const [error, setError] = useState('');
-  
-  const recognitionRef = useRef<any>(null);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [manualEntry, setManualEntry] = useState({
+    amount: '',
+    description: '',
+    type: 'expense' as 'income' | 'expense',
+    category: 'General'
+  });
+
+  const recognition = useRef<any>(null);
 
   useEffect(() => {
-    // Check if browser supports speech recognition
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'sw-KE'; // Swahili (Kenya)
-      
-      recognitionRef.current.onresult = (event: any) => {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognition.current = new SpeechRecognition();
+      recognition.current.continuous = true;
+      recognition.current.interimResults = true;
+      recognition.current.lang = 'en-US';
+
+      recognition.current.onresult = (event: any) => {
         let finalTranscript = '';
-        
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += transcript;
+            finalTranscript += event.results[i][0].transcript;
           }
         }
-        
         if (finalTranscript) {
           setTranscript(finalTranscript);
           processVoiceInput(finalTranscript);
         }
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        setError(`Kosa la sauti: ${event.error}`);
+      recognition.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-    } else {
-      setError('Simu yako haiwezi kutambua sauti');
     }
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+      if (recognition.current) {
+        recognition.current.stop();
       }
     };
   }, []);
 
-  const processVoiceInput = (text: string) => {
-    setIsProcessing(true);
-    
-    // Simple NLP for Swahili/English transaction parsing
-    const lowerText = text.toLowerCase();
-    
-    // Determine transaction type
-    const incomeKeywords = ['nilipata', 'nimepokea', 'mapato', 'uuzaji', 'received', 'earned', 'income', 'sale'];
-    const expenseKeywords = ['nilitumia', 'niliuza', 'matumizi', 'nililipa', 'spent', 'bought', 'paid', 'expense'];
-    
-    let type: 'income' | 'expense' = 'expense';
-    if (incomeKeywords.some(keyword => lowerText.includes(keyword))) {
-      type = 'income';
-    } else if (expenseKeywords.some(keyword => lowerText.includes(keyword))) {
-      type = 'expense';
-    }
-
-    // Extract amount (look for numbers)
-    const amountMatch = text.match(/(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-    const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
-
-    // Extract description (simplified)
-    let description = text;
-    if (amountMatch) {
-      description = text.replace(amountMatch[0], '').trim();
-    }
-
-    // Determine category based on keywords
-    let category = 'Mingine';
-    const categoryMap = {
-      'Chakula': ['chakula', 'nyama', 'mboga', 'food', 'vegetables', 'meat'],
-      'Usafiri': ['matatu', 'basi', 'pikipiki', 'transport', 'bus', 'taxi'],
-      'Biashara': ['biashara', 'duka', 'uuzaji', 'business', 'shop', 'stock'],
-      'Nyumba': ['kodi', 'nyumba', 'rent', 'house', 'home'],
-      'Simu': ['airtime', 'mabundles', 'simu', 'phone', 'data']
-    };
-
-    for (const [cat, keywords] of Object.entries(categoryMap)) {
-      if (keywords.some(keyword => lowerText.includes(keyword))) {
-        category = cat;
-        break;
-      }
-    }
-
-    const parsedData = {
-      type,
-      amount,
-      description: description || `${type === 'income' ? 'Mapato' : 'Matumizi'} ya ${amount}`,
-      category,
-      source: 'voice' as const
-    };
-
-    setParsedTransaction(parsedData);
-    setIsProcessing(false);
-  };
-
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
-      setTranscript('');
-      setError('');
-      setParsedTransaction(null);
+    if (recognition.current) {
       setIsListening(true);
-      recognitionRef.current.start();
+      setTranscript('');
+      recognition.current.start();
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
+    if (recognition.current) {
       setIsListening(false);
+      recognition.current.stop();
     }
   };
 
-  const confirmTransaction = () => {
-    if (parsedTransaction && parsedTransaction.amount > 0) {
-      onTransactionAdd(parsedTransaction);
+  const processVoiceInput = async (text: string) => {
+    setIsProcessing(true);
+    
+    // Simple AI processing simulation
+    setTimeout(() => {
+      const amount = extractAmount(text);
+      const type = text.toLowerCase().includes('received') || text.toLowerCase().includes('income') || text.toLowerCase().includes('paid') ? 'income' : 'expense';
+      const description = text.replace(/[0-9]/g, '').replace(/dollar|shilling|ksh|usd/gi, '').trim();
+      
+      const processed = {
+        amount: amount.toString(),
+        description: description || 'Voice transaction',
+        type,
+        category: 'General'
+      };
+      
+      setExtractedData(processed);
+      setManualEntry(processed);
+      setIsProcessing(false);
+    }, 2000);
+  };
+
+  const extractAmount = (text: string): number => {
+    const match = text.match(/\d+/);
+    return match ? parseInt(match[0]) : 0;
+  };
+
+  const handleSubmit = () => {
+    const amount = parseFloat(manualEntry.amount);
+    if (amount > 0 && manualEntry.description.trim()) {
+      onTransactionAdd({
+        type: manualEntry.type,
+        amount,
+        description: manualEntry.description,
+        category: manualEntry.category,
+        source: 'voice'
+      });
       onClose();
-    }
-  };
-
-  const speakInstructions = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(
-        'Sema kama hivi: Nilipata shilingi mia mbili kutoka kwa uuzaji wa mboga. Au, Nilitumia shilingi hamsini kwa chakula.'
-      );
-      utterance.lang = 'sw-KE';
-      speechSynthesis.speak(utterance);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg bg-white animate-bounce-in">
+      <Card className="w-full max-w-lg bg-white max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center space-x-2">
-            <Mic className="w-5 h-5 text-kenya-red" />
-            <span>Ongeza kwa Sauti</span>
+            <Mic className="w-5 h-5 text-red-600" />
+            <span>Voice Input</span>
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -174,115 +135,144 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onClose, onTransactionAdd }) =>
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Instructions */}
-          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-orange-800">Maelekezo (Instructions):</p>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={speakInstructions}
-                className="text-orange-600 hover:text-orange-700"
-              >
-                <Volume2 className="w-4 h-4" />
-              </Button>
-            </div>
-            <p className="text-sm text-orange-700">
-              Sema kama: "Nilipata shilingi mia mbili kutoka uuzaji" au "Nilitumia shilingi hamsini kwa chakula"
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-700">
+              Say something like: "I spent 500 shillings on office supplies" or "Received 2000 from client payment"
             </p>
           </div>
 
-          {/* Voice Recording */}
           <div className="text-center space-y-4">
-            <Button
-              onClick={isListening ? stopListening : startListening}
-              className={`w-24 h-24 rounded-full ${
-                isListening 
-                  ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                  : 'bg-kenya-red hover:bg-kenya-red/90'
-              }`}
-              disabled={!!error}
-            >
-              {isListening ? (
-                <MicOff className="w-8 h-8 text-white" />
-              ) : (
-                <Mic className="w-8 h-8 text-white" />
-              )}
-            </Button>
+            {!isListening ? (
+              <Button 
+                onClick={startListening}
+                className="w-32 h-32 rounded-full bg-red-600 hover:bg-red-700 text-white"
+                disabled={isProcessing}
+              >
+                <Mic className="w-12 h-12" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={stopListening}
+                className="w-32 h-32 rounded-full bg-red-600 hover:bg-red-700 text-white animate-pulse"
+              >
+                <MicOff className="w-12 h-12" />
+              </Button>
+            )}
             
             <p className="text-sm text-gray-600">
-              {isListening ? 'Sikiliza... Sema sasa!' : 'Bonyeza kuanza kusema'}
+              {isListening ? 'Listening... Speak now' : 'Tap to start recording'}
             </p>
           </div>
 
-          {/* Error Display */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          {/* Transcript Display */}
           {transcript && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm font-medium text-blue-800 mb-1">Ulisema:</p>
-              <p className="text-sm text-blue-700">"{transcript}"</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm font-medium text-gray-700">You said:</p>
+              <p className="text-gray-900">{transcript}</p>
             </div>
           )}
 
-          {/* Processing */}
           {isProcessing && (
-            <div className="flex items-center justify-center space-x-2 text-gray-600">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="text-sm">Ninachakata...</span>
+            <div className="text-center py-4">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-blue-600" />
+              <p className="text-sm text-gray-600">Processing your voice input...</p>
             </div>
           )}
 
-          {/* Parsed Transaction */}
-          {parsedTransaction && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-              <p className="text-sm font-medium text-green-800">Nimeeleweka:</p>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Aina:</span>
-                  <Badge variant={parsedTransaction.type === 'income' ? 'default' : 'destructive'}>
-                    {parsedTransaction.type === 'income' ? 'Mapato' : 'Matumizi'}
-                  </Badge>
+          {extractedData && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center space-x-2 mb-2">
+                <Check className="w-4 h-4 text-green-600" />
+                <p className="text-sm font-medium text-green-800">Extracted information:</p>
+              </div>
+              <p className="text-sm text-green-700">
+                Amount: KES {extractedData.amount} | {extractedData.description}
+              </p>
+            </div>
+          )}
+
+          {/* Manual Entry Form */}
+          {extractedData && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="type">Transaction Type</Label>
+                  <select
+                    value={manualEntry.type}
+                    onChange={(e) => setManualEntry(prev => ({ ...prev, type: e.target.value as 'income' | 'expense' }))}
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="expense">Expense</option>
+                    <option value="income">Income</option>
+                  </select>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Kiasi:</span>
-                  <span className="font-medium">KES {parsedTransaction.amount.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Maelezo:</span>
-                  <span className="text-sm text-right max-w-48">{parsedTransaction.description}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Jamii:</span>
-                  <Badge variant="outline">{parsedTransaction.category}</Badge>
+
+                <div>
+                  <Label htmlFor="amount">Amount (KES)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={manualEntry.amount}
+                    onChange={(e) => setManualEntry(prev => ({ ...prev, amount: e.target.value }))}
+                    placeholder="100"
+                    className="mt-1"
+                  />
                 </div>
               </div>
 
-              <div className="flex space-x-2 pt-2">
-                <Button 
-                  onClick={confirmTransaction}
-                  className="flex-1 bg-kenya-green hover:bg-kenya-green/90"
-                  disabled={!parsedTransaction.amount}
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={manualEntry.description}
+                  onChange={(e) => setManualEntry(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="What was this transaction for?"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  value={manualEntry.category}
+                  onChange={(e) => setManualEntry(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
                 >
-                  Thibitisha
+                  <option value="General">General</option>
+                  <option value="Office Supplies">Office Supplies</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Food">Food</option>
+                  <option value="Utilities">Utilities</option>
+                  <option value="Marketing">Marketing</option>
+                </select>
+              </div>
+
+              <div className="flex space-x-2 pt-4">
+                <Button 
+                  onClick={handleSubmit}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  disabled={!manualEntry.amount || !manualEntry.description.trim()}
+                >
+                  Add Transaction
                 </Button>
                 <Button 
-                  variant="outline" 
-                  onClick={() => setParsedTransaction(null)}
+                  variant="outline"
+                  onClick={() => {
+                    setTranscript('');
+                    setExtractedData(null);
+                  }}
                   className="flex-1"
                 >
-                  Rudia
+                  Try Again
                 </Button>
               </div>
+            </div>
+          )}
+
+          {!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                Voice recognition is not supported in your browser. Please use manual entry instead.
+              </p>
             </div>
           )}
         </CardContent>

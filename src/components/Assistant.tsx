@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { MessageCircle, X, Volume2, VolumeX, Lightbulb, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { X, Send, Bot, User } from 'lucide-react';
 
 interface AssistantProps {
   onClose: () => void;
@@ -17,257 +17,189 @@ interface AssistantProps {
   }>;
 }
 
+interface Message {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 const Assistant: React.FC<AssistantProps> = ({ onClose, transactions }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speechEnabled, setSpeechEnabled] = useState(true);
-
-  const steps = [
+  const [messages, setMessages] = useState<Message[]>([
     {
-      title: "Karibu Biz Link!",
-      content: "Mimi ni msaidizi wako wa biashara. Nitakuongoza jinsi ya kutumia programu hii kuongeza mapato na matumizi yako.",
-      swahili: "Karibu Biz Link! Mimi ni msaidizi wako wa biashara. Nitakuongoza jinsi ya kutumia programu hii.",
-      tips: ["Programu hii itakusaidia kufuatilia faida yako", "Unaweza kutumia sauti, picha, au kuandika"]
-    },
-    {
-      title: "Kuongeza Shughuli",
-      content: "Kuna njia tatu za kuongeza mapato na matumizi: kutumia sauti, kupiga picha ya risiti, au kuandika kwa mkono.",
-      swahili: "Kuna njia tatu za kuongeza shughuli za biashara yako",
-      tips: ["Sauti - haraka na rahisi", "Picha - kwa marisiti", "Kawaida - udhibiti kamili"]
-    },
-    {
-      title: "Kutumia Sauti",
-      content: "Bonyeza kitufe cha 'Sauti' na sema kama: 'Nilipata shilingi mia mbili kutoka uuzaji wa mboga' au 'Nilitumia shilingi hamsini kwa chakula'.",
-      swahili: "Sema tu kama unavyoongea kawaida. Mfano: Nilipata shilingi mia mbili uuzaji",
-      tips: ["Unaweza kuongea Kiswahili au Kingereza", "Taja kiasi na kile ulifanya"]
-    },
-    {
-      title: "Kupiga Picha",
-      content: "Piga picha ya risiti yako na tutasoma taarifa za malipo. Hii ni rahisi kwa biashara za duka.",
-      swahili: "Piga picha ya risiti yako, tutasoma kiotomatiki",
-      tips: ["Hakikisha picha ni wazi", "Risiti iwe imeangaza vizuri"]
-    },
-    {
-      title: "Kuona Faida Yako",
-      content: "Katika ukurasa mkuu, utaona jumla ya mapato, matumizi, na faida yako. Hii itakusaidia kujua kama unafanya faida.",
-      swahili: "Ukurasa mkuu unaonyesha mapato, matumizi na faida yako",
-      tips: ["Faida ni mapato minus matumizi", "Chunguza kila siku ili ujue hali ya biashara"]
+      id: '1',
+      type: 'assistant',
+      content: 'Hello! I\'m your business assistant. I can help you analyze your transactions, answer questions about your finances, or provide business insights. How can I help you today?',
+      timestamp: new Date()
     }
-  ];
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
-  const businessInsights = [
-    {
-      icon: TrendingUp,
-      title: "Faida ya Leo",
-      message: transactions.length > 0 
-        ? `Una shughuli ${transactions.length}. Endelea vizuri!`
-        : "Anza kuongeza shughuli zako za leo."
-    },
-    {
-      icon: Lightbulb,
-      title: "Ushauri",
-      message: "Fuatilia matumizi yako kila siku ili ujue mahali unakopoteza pesa."
-    },
-    {
-      icon: AlertTriangle,
-      title: "Kumbuka",
-      message: "Andika kila kitu - hata kiasi kidogo. Hiki ni muhimu kwa biashara yako."
-    }
-  ];
-
-  const speak = (text: string) => {
-    if (!speechEnabled || !('speechSynthesis' in window)) return;
+  const generateResponse = (userMessage: string): string => {
+    const lowerMessage = userMessage.toLowerCase();
     
-    setIsSpeaking(true);
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'sw-KE';
-    utterance.rate = 0.8;
-    utterance.pitch = 1.1;
+    // Calculate some basic stats
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const profit = totalIncome - totalExpenses;
     
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    if (lowerMessage.includes('profit') || lowerMessage.includes('revenue')) {
+      return `Based on your current transactions, you have:\n• Total Income: KES ${totalIncome.toLocaleString()}\n• Total Expenses: KES ${totalExpenses.toLocaleString()}\n• Net Profit: KES ${profit.toLocaleString()}\n\n${profit > 0 ? 'Great job! Your business is profitable.' : 'Consider reviewing your expenses to improve profitability.'}`;
+    }
     
-    speechSynthesis.speak(utterance);
+    if (lowerMessage.includes('expense') || lowerMessage.includes('spending')) {
+      const categories = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((acc, t) => {
+          acc[t.category] = (acc[t.category] || 0) + t.amount;
+          return acc;
+        }, {} as Record<string, number>);
+      
+      const topCategory = Object.entries(categories).sort(([,a], [,b]) => b - a)[0];
+      
+      return `Your total expenses are KES ${totalExpenses.toLocaleString()}. ${topCategory ? `Your highest expense category is "${topCategory[0]}" with KES ${topCategory[1].toLocaleString()}.` : ''} Consider tracking categories to identify cost-saving opportunities.`;
+    }
+    
+    if (lowerMessage.includes('advice') || lowerMessage.includes('tip')) {
+      const tips = [
+        'Track every transaction, no matter how small - it all adds up!',
+        'Review your expenses weekly to identify unnecessary costs.',
+        'Set aside 20% of your income for emergencies and growth.',
+        'Consider separate accounts for business and personal expenses.',
+        'Use categories to better understand where your money goes.'
+      ];
+      return tips[Math.floor(Math.random() * tips.length)];
+    }
+    
+    if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
+      return 'Hello! I\'m here to help you with your business finances. You can ask me about your profit, expenses, income, or request business advice.';
+    }
+    
+    // Default response
+    return 'I can help you analyze your transactions and provide business insights. Try asking me about your profit, expenses, or request some business advice!';
   };
 
-  const stopSpeaking = () => {
-    speechSynthesis.cancel();
-    setIsSpeaking(false);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    // Simulate typing delay
+    setTimeout(() => {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: generateResponse(inputMessage),
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 1000);
   };
 
-  useEffect(() => {
-    if (speechEnabled && currentStep < steps.length) {
-      setTimeout(() => {
-        speak(steps[currentStep].swahili);
-      }, 500);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
-  }, [currentStep, speechEnabled]);
-
-  const nextStep = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const toggleSpeech = () => {
-    if (isSpeaking) {
-      stopSpeaking();
-    }
-    setSpeechEnabled(!speechEnabled);
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-white animate-bounce-in max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-kenya-red to-kenya-green text-white">
+      <Card className="w-full max-w-2xl h-[600px] bg-white flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between border-b">
           <CardTitle className="text-lg font-semibold flex items-center space-x-2">
-            <MessageCircle className="w-5 h-5" />
-            <span>Msaidizi wa Biz Link</span>
+            <Bot className="w-5 h-5 text-blue-600" />
+            <span>Business Assistant</span>
           </CardTitle>
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleSpeech}
-              className="text-white hover:bg-white/20"
-            >
-              {speechEnabled && !isSpeaking ? (
-                <Volume2 className="w-4 h-4" />
-              ) : (
-                <VolumeX className="w-4 h-4" />
-              )}
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onClose}
-              className="text-white hover:bg-white/20"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
         </CardHeader>
         
-        <CardContent className="p-6">
-          {currentStep < steps.length ? (
-            <div className="space-y-6">
-              {/* Progress */}
-              <div className="flex items-center space-x-2">
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-kenya-green h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm text-gray-600">
-                  {currentStep + 1}/{steps.length}
-                </span>
-              </div>
-
-              {/* Current Step */}
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {steps[currentStep].title}
-                  </h3>
-                  <div className="w-16 h-16 mx-auto mb-4 gradient-kenya rounded-full flex items-center justify-center animate-float">
-                    <MessageCircle className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800 text-center text-lg leading-relaxed">
-                    {steps[currentStep].content}
-                  </p>
-                </div>
-
-                {/* Tips */}
-                <div className="space-y-2">
-                  <h4 className="font-medium text-gray-900">Vidokezo:</h4>
-                  {steps[currentStep].tips.map((tip, index) => (
-                    <div key={index} className="flex items-start space-x-2">
-                      <div className="w-2 h-2 bg-kenya-green rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-sm text-gray-700">{tip}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Navigation */}
-                <div className="flex justify-between pt-4">
-                  <Button
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={currentStep === 0}
-                  >
-                    Nyuma
-                  </Button>
-                  <Button
-                    onClick={nextStep}
-                    className="bg-kenya-green hover:bg-kenya-green/90"
-                    disabled={currentStep === steps.length - 1}
-                  >
-                    {currentStep === steps.length - 1 ? 'Maliza' : 'Mbele'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Completion Screen with Business Insights
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-kenya-green rounded-full flex items-center justify-center animate-bounce-in">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Hongera! Umemaliza Mafunzo
-                </h3>
-                <p className="text-gray-600">
-                  Sasa unaweza kuanza kutumia Biz Link kuongeza mapato na matumizi yako.
-                </p>
-              </div>
-
-              {/* Business Insights */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-gray-900">Taarifa za Biashara Yako:</h4>
-                {businessInsights.map((insight, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg animate-slide-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <div className="w-10 h-10 bg-kenya-blue/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <insight.icon className="w-5 h-5 text-kenya-blue" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-gray-900">{insight.title}</h5>
-                      <p className="text-sm text-gray-600">{insight.message}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                onClick={onClose}
-                className="w-full bg-kenya-green hover:bg-kenya-green/90 text-white py-3"
+        <CardContent className="flex-1 flex flex-col p-0">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                Anza Kutumia Biz Link
+                <div
+                  className={`max-w-[80%] p-3 rounded-lg ${
+                    message.type === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <div className="flex items-start space-x-2">
+                    {message.type === 'assistant' && (
+                      <Bot className="w-4 h-4 mt-1 text-blue-600" />
+                    )}
+                    {message.type === 'user' && (
+                      <User className="w-4 h-4 mt-1 text-white" />
+                    )}
+                    <div>
+                      <p className="text-sm whitespace-pre-line">{message.content}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Bot className="w-4 h-4 text-blue-600" />
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="border-t p-4">
+            <div className="flex space-x-2">
+              <Input
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask me about your business finances..."
+                className="flex-1"
+                disabled={isTyping}
+              />
+              <Button 
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isTyping}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Send className="w-4 h-4" />
               </Button>
             </div>
-          )}
-
-          {/* Speech indicator */}
-          {isSpeaking && (
-            <div className="fixed bottom-4 right-4 bg-kenya-green text-white px-4 py-2 rounded-full flex items-center space-x-2 animate-pulse">
-              <Volume2 className="w-4 h-4" />
-              <span className="text-sm">Ninaongea...</span>
-            </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
