@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'en' | 'sw';
@@ -58,7 +57,6 @@ const translations = {
     'register.password': 'Password',
     'register.confirmPassword': 'Confirm Password',
     'register.agreeTerms': 'I agree to the Terms of Service and Privacy Policy',
-    'register.createAccount': 'Create Account',
     'register.creating': 'Creating account...',
     'register.haveAccount': 'Already have an account?',
     'register.signInHere': 'Sign in here',
@@ -129,7 +127,6 @@ const translations = {
     'register.password': 'Nenosiri',
     'register.confirmPassword': 'Thibitisha Nenosiri',
     'register.agreeTerms': 'Ninakubali Masharti ya Huduma na Sera ya Faragha',
-    'register.createAccount': 'Tengeneza Akaunti',
     'register.creating': 'Inatengeneza akaunti...',
     'register.haveAccount': 'Tayari una akaunti?',
     'register.signInHere': 'Ingia hapa',
