@@ -1,13 +1,21 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    firstName?: string;
+    lastName?: string;
+    businessName?: string;
+  };
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,42 +30,51 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    // Check for existing demo session
+    const demoUser = localStorage.getItem('demo-user');
+    if (demoUser) {
+      try {
+        setUser(JSON.parse(demoUser));
+      } catch (error) {
+        console.error('Error parsing demo user:', error);
+        localStorage.removeItem('demo-user');
       }
-    );
-
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    setLoading(true);
+    
+    // Simulate demo authentication
+    const demoUser: User = {
+      id: 'demo-user-123',
+      email: email,
+      user_metadata: {
+        firstName: 'Demo',
+        lastName: 'User',
+        businessName: 'Bizkash Demo Business'
+      }
+    };
+
+    localStorage.setItem('demo-user', JSON.stringify(demoUser));
+    setUser(demoUser);
+    setLoading(false);
+  };
+
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-    }
+    localStorage.removeItem('demo-user');
+    setUser(null);
   };
 
   const value = {
     user,
-    session,
     loading,
     signOut,
+    signIn,
   };
 
   return (
