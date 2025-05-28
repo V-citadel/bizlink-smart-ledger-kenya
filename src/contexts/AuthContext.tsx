@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, metadata: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,14 +34,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing demo session
-    const demoUser = localStorage.getItem('demo-user');
-    if (demoUser) {
+    // Check for existing session
+    const storedUser = localStorage.getItem('bizkash-user');
+    if (storedUser) {
       try {
-        setUser(JSON.parse(demoUser));
+        setUser(JSON.parse(storedUser));
       } catch (error) {
-        console.error('Error parsing demo user:', error);
-        localStorage.removeItem('demo-user');
+        console.error('Error parsing user data:', error);
+        localStorage.removeItem('bizkash-user');
       }
     }
     setLoading(false);
@@ -49,24 +50,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     
-    // Simulate demo authentication
-    const demoUser: User = {
-      id: 'demo-user-123',
-      email: email,
-      user_metadata: {
-        firstName: 'Demo',
-        lastName: 'User',
-        businessName: 'Bizkash Demo Business'
-      }
-    };
+    try {
+      // Simulate authentication delay for realism
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const demoUser: User = {
+        id: 'user-' + Date.now(),
+        email: email,
+        user_metadata: {
+          firstName: 'Business',
+          lastName: 'Owner',
+          businessName: email.includes('@') ? email.split('@')[0] + ' Business' : 'My Business'
+        }
+      };
 
-    localStorage.setItem('demo-user', JSON.stringify(demoUser));
-    setUser(demoUser);
-    setLoading(false);
+      localStorage.setItem('bizkash-user', JSON.stringify(demoUser));
+      setUser(demoUser);
+    } catch (error) {
+      throw new Error('Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string, metadata: any) => {
+    setLoading(true);
+    
+    try {
+      // Simulate registration delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const newUser: User = {
+        id: 'user-' + Date.now(),
+        email: email,
+        user_metadata: {
+          firstName: metadata.firstName,
+          lastName: metadata.lastName,
+          businessName: metadata.businessName
+        }
+      };
+
+      localStorage.setItem('bizkash-user', JSON.stringify(newUser));
+      setUser(newUser);
+    } catch (error) {
+      throw new Error('Registration failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
-    localStorage.removeItem('demo-user');
+    localStorage.removeItem('bizkash-user');
     setUser(null);
   };
 
@@ -75,6 +109,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     signOut,
     signIn,
+    signUp,
   };
 
   return (

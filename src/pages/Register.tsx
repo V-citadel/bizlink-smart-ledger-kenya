@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, CheckCircle, ArrowRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Eye, EyeOff, ArrowRight, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 
@@ -16,6 +16,7 @@ const Register = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { signUp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,47 +74,23 @@ const Register = () => {
     setLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            businessName: formData.businessName,
-            businessType: formData.businessType,
-          }
-        }
+      await signUp(formData.email, formData.password, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone,
+        businessName: formData.businessName,
+        businessType: formData.businessType,
       });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast({
-            title: t('register.errors.accountExists'),
-            description: t('register.errors.accountExistsDesc'),
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: t('register.errors.registrationFailed'),
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-        return;
-      }
-
-      if (data.user) {
-        toast({
-          title: t('register.success.title'),
-          description: t('register.success.description'),
-        });
-        navigate('/');
-      }
+      toast({
+        title: t('register.success.title'),
+        description: t('register.success.description'),
+      });
+      
+      navigate('/');
     } catch (error) {
       toast({
-        title: t('common.error'),
+        title: t('register.errors.registrationFailed'),
         description: t('register.errors.tryAgain'),
         variant: "destructive",
       });
@@ -130,224 +107,195 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4 flex gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="absolute top-4 right-4 flex gap-3">
         <LanguageSwitcher />
         <ThemeSwitcher />
       </div>
       
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* Left Side - Marketing Content */}
-        <div className="hidden lg:block animate-fade-in">
-          <div className="text-center space-y-6">
-            <div className="flex items-center justify-center mb-6">
-              <img 
-                src="/lovable-uploads/a5d86a0b-8e34-4e06-85a5-6de4043457b9.png" 
-                alt="Bizkash Logo" 
-                className="h-24 w-auto"
-              />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              {t('register.welcome')} <span className="text-kenya-red">Bizkash</span>
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              {t('register.subtitle')}
-            </p>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-xl border-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm">
+            <CardHeader className="text-center pb-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <Building2 className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                {t('register.createAccount')}
+              </CardTitle>
+              <p className="text-slate-600 dark:text-slate-400">
+                {t('register.joinEntrepreneurs')}
+              </p>
+            </CardHeader>
             
-            <div className="space-y-4 text-left max-w-md mx-auto">
-              <div className="flex items-center space-x-3 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <span className="text-gray-700 dark:text-gray-300">{t('register.features.trackIncomeExpenses')}</span>
-              </div>
-              <div className="flex items-center space-x-3 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <span className="text-gray-700 dark:text-gray-300">{t('register.features.generateInvoices')}</span>
-              </div>
-              <div className="flex items-center space-x-3 animate-slide-up" style={{ animationDelay: '0.6s' }}>
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <span className="text-gray-700 dark:text-gray-300">{t('register.features.businessInsights')}</span>
-              </div>
-              <div className="flex items-center space-x-3 animate-slide-up" style={{ animationDelay: '0.8s' }}>
-                <CheckCircle className="w-6 h-6 text-green-600" />
-                <span className="text-gray-700 dark:text-gray-300">{t('register.features.multiLanguage')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="firstName" className="text-sm font-medium">
+                      {t('register.firstName')}
+                    </Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      className={`mt-1 ${errors.firstName ? 'border-red-500' : ''}`}
+                      placeholder={t('register.placeholders.firstName')}
+                      disabled={loading}
+                    />
+                    {errors.firstName && <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="lastName" className="text-sm font-medium">
+                      {t('register.lastName')}
+                    </Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      className={`mt-1 ${errors.lastName ? 'border-red-500' : ''}`}
+                      placeholder={t('register.placeholders.lastName')}
+                      disabled={loading}
+                    />
+                    {errors.lastName && <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>}
+                  </div>
+                </div>
 
-        {/* Right Side - Registration Form */}
-        <Card className="w-full animate-slide-in-right">
-          <CardHeader className="text-center">
-            <div className="lg:hidden flex justify-center mb-4">
-              <img 
-                src="/lovable-uploads/a5d86a0b-8e34-4e06-85a5-6de4043457b9.png" 
-                alt="Bizkash Logo" 
-                className="h-16 w-auto"
-              />
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">{t('register.createAccount')}</CardTitle>
-            <p className="text-gray-600 dark:text-gray-400">{t('register.joinEntrepreneurs')}</p>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="firstName">{t('register.firstName')}</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    {t('register.email')}
+                  </Label>
                   <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    className={errors.firstName ? 'border-red-500' : ''}
-                    placeholder={t('register.placeholders.firstName')}
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className={`mt-1 ${errors.email ? 'border-red-500' : ''}`}
+                    placeholder={t('register.placeholders.email')}
                     disabled={loading}
                   />
-                  {errors.firstName && <p className="text-sm text-red-600 mt-1">{errors.firstName}</p>}
+                  {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
                 </div>
-                
+
                 <div>
-                  <Label htmlFor="lastName">{t('register.lastName')}</Label>
+                  <Label htmlFor="businessName" className="text-sm font-medium">
+                    {t('register.businessName')}
+                  </Label>
                   <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    className={errors.lastName ? 'border-red-500' : ''}
-                    placeholder={t('register.placeholders.lastName')}
+                    id="businessName"
+                    value={formData.businessName}
+                    onChange={(e) => handleInputChange('businessName', e.target.value)}
+                    className={`mt-1 ${errors.businessName ? 'border-red-500' : ''}`}
+                    placeholder={t('register.placeholders.businessName')}
                     disabled={loading}
                   />
-                  {errors.lastName && <p className="text-sm text-red-600 mt-1">{errors.lastName}</p>}
+                  {errors.businessName && <p className="text-xs text-red-600 mt-1">{errors.businessName}</p>}
                 </div>
-              </div>
 
-              {/* Contact Information */}
-              <div>
-                <Label htmlFor="email">{t('register.email')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className={errors.email ? 'border-red-500' : ''}
-                  placeholder={t('register.placeholders.email')}
-                  disabled={loading}
-                />
-                {errors.email && <p className="text-sm text-red-600 mt-1">{errors.email}</p>}
-              </div>
+                <div>
+                  <Label htmlFor="businessType" className="text-sm font-medium">
+                    {t('register.businessType')}
+                  </Label>
+                  <select
+                    id="businessType"
+                    value={formData.businessType}
+                    onChange={(e) => handleInputChange('businessType', e.target.value)}
+                    className={`w-full mt-1 px-3 py-2 text-sm border rounded-md bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${errors.businessType ? 'border-red-500' : 'border-slate-300 dark:border-slate-600'}`}
+                    disabled={loading}
+                  >
+                    <option value="">{t('register.placeholders.businessType')}</option>
+                    {businessTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  {errors.businessType && <p className="text-xs text-red-600 mt-1">{errors.businessType}</p>}
+                </div>
 
-              <div>
-                <Label htmlFor="phone">{t('register.phone')}</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className={errors.phone ? 'border-red-500' : ''}
-                  placeholder={t('register.placeholders.phone')}
-                  disabled={loading}
-                />
-                {errors.phone && <p className="text-sm text-red-600 mt-1">{errors.phone}</p>}
-              </div>
+                <div>
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    {t('register.password')}
+                  </Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className={`pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                      placeholder={t('register.placeholders.password')}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500"
+                      disabled={loading}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-xs text-red-600 mt-1">{errors.password}</p>}
+                </div>
 
-              {/* Business Information */}
-              <div>
-                <Label htmlFor="businessName">{t('register.businessName')}</Label>
-                <Input
-                  id="businessName"
-                  value={formData.businessName}
-                  onChange={(e) => handleInputChange('businessName', e.target.value)}
-                  className={errors.businessName ? 'border-red-500' : ''}
-                  placeholder={t('register.placeholders.businessName')}
-                  disabled={loading}
-                />
-                {errors.businessName && <p className="text-sm text-red-600 mt-1">{errors.businessName}</p>}
-              </div>
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                    {t('register.confirmPassword')}
+                  </Label>
+                  <div className="relative mt-1">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      className={`pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                      placeholder={t('register.placeholders.confirmPassword')}
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500"
+                      disabled={loading}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <p className="text-xs text-red-600 mt-1">{errors.confirmPassword}</p>}
+                </div>
 
-              <div>
-                <Label htmlFor="businessType">{t('register.businessType')}</Label>
-                <select
-                  id="businessType"
-                  value={formData.businessType}
-                  onChange={(e) => handleInputChange('businessType', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md text-sm ${errors.businessType ? 'border-red-500' : 'border-gray-300'}`}
+                <Button 
+                  type="submit" 
+                  className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                   disabled={loading}
                 >
-                  <option value="">{t('register.placeholders.businessType')}</option>
-                  {businessTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-                {errors.businessType && <p className="text-sm text-red-600 mt-1">{errors.businessType}</p>}
-              </div>
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>{t('register.creating')}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>{t('register.createAccount')}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  )}
+                </Button>
 
-              {/* Password Fields */}
-              <div>
-                <Label htmlFor="password">{t('register.password')}</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={errors.password ? 'border-red-500' : ''}
-                    placeholder={t('register.placeholders.password')}
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    disabled={loading}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                <div className="text-center pt-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    {t('register.alreadyHaveAccount')}{' '}
+                    <Link to="/login" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold transition-colors">
+                      {t('register.signInHere')}
+                    </Link>
+                  </p>
                 </div>
-                {errors.password && <p className="text-sm text-red-600 mt-1">{errors.password}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="confirmPassword">{t('register.confirmPassword')}</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={errors.confirmPassword ? 'border-red-500' : ''}
-                    placeholder={t('register.placeholders.confirmPassword')}
-                    disabled={loading}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                    disabled={loading}
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {errors.confirmPassword && <p className="text-sm text-red-600 mt-1">{errors.confirmPassword}</p>}
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full bg-kenya-red hover:bg-kenya-red/90 text-white"
-                disabled={loading}
-              >
-                {loading ? t('register.creating') : t('register.createAccount')}
-                {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
-              </Button>
-
-              <div className="text-center">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('register.alreadyHaveAccount')}{' '}
-                  <Link to="/login" className="text-kenya-blue hover:underline font-medium">
-                    {t('register.signInHere')}
-                  </Link>
-                </p>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
